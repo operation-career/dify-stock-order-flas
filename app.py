@@ -5,6 +5,7 @@ import io
 import smtplib
 from email.message import EmailMessage
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
@@ -12,13 +13,13 @@ app = Flask(__name__)
 PRODUCT_MASTER_PATH = "製品マスタ.xlsx"
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-GMAIL_USER = "your_email@gmail.com"  # ← ご自身のGmailに変更
-GMAIL_PASS = "your_app_password"     # ← アプリパスワードを使用（推奨）
-TO_ADDRESS = "receiver@example.com"  # ← 送信先のメールアドレス
+GMAIL_USER = os.environ.get("GMAIL_USER")  # 環境変数から読み込む
+GMAIL_PASS = os.environ.get("GMAIL_PASS")
+TO_ADDRESS = os.environ.get("TO_ADDRESS") or "receiver@example.com"
 
 @app.route('/')
-def hello():
-    return 'Flask server is running'
+def index():
+    return "Flask webhook app is running."
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -48,7 +49,6 @@ def webhook():
                 output_df.to_excel(writer, index=False, sheet_name="発注一覧")
             buffer.seek(0)
 
-            # メール送信
             msg = EmailMessage()
             msg["Subject"] = "【自動送信】本日の発注リスト"
             msg["From"] = GMAIL_USER
@@ -69,4 +69,4 @@ def webhook():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0", port=10000)
